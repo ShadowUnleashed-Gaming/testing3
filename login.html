@@ -1,35 +1,139 @@
-<!-- templates/login.html -->
+<!-- login.html - User Login Page -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: #1c1c1c;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px red;
+            display: inline-block;
+            width: 60%;
+            max-width: 400px;
+        }
+        input {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: none;
+            width: 80%;
+        }
+        button {
+            background-color: red;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: darkred;
+        }
+    </style>
 </head>
 <body>
-    <h2>Login</h2>
-    <input type="text" id="loginUsername" placeholder="Username">
-    <input type="password" id="loginPassword" placeholder="Password">
-    <button onclick="loginUser()">Login</button>
+    <div class="login-container">
+        <h2>Login</h2>
+        <input type="text" id="loginUsername" placeholder="Username">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button onclick="loginUser()">Login</button>
+    </div>
+
     <script>
+        const adminCredentials = {
+            username: "ShadowUnleashedGaming",
+            password: "123456789"
+        };
+        
         async function loginUser() {
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
+            if (!username || !password) return alert('Please enter username and password');
             
-            const response = await fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                alert('Login successful!');
-                window.location.href = '/admin';
-            } else {
-                alert('Invalid credentials!');
+            if (username === adminCredentials.username && password === adminCredentials.password) {
+                alert('Admin login successful!');
+                localStorage.setItem('token', 'admin-token');
+                window.location.href = 'admin.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    alert('Login successful!');
+                    window.location.href = 'admin.html';
+                } else {
+                    alert('Invalid credentials!');
+                }
+            } catch (error) {
+                alert('Server error: Unable to reach backend.');
             }
         }
+
+        async function changePassword() {
+            const username = prompt("Enter your username:");
+            const oldPassword = prompt("Enter your old password:");
+            const newPassword = prompt("Enter your new password:");
+            if (!username || !oldPassword || !newPassword) return alert('All fields are required!');
+            
+            try {
+                const response = await fetch('/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, oldPassword, newPassword })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('Password changed successfully!');
+                } else {
+                    alert('Failed to change password: ' + data.message);
+                }
+            } catch (error) {
+                alert('Server error: Unable to reach backend.');
+            }
+        }
+
+        async function lockdownSite() {
+            const enteredPassword = prompt("Enter lockdown password:");
+            if (enteredPassword !== "A246T211CC") {
+                alert("Incorrect password!");
+                return;
+            }
+            alert("Site is now in lockdown mode! Chat and file sharing disabled.");
+            await fetch('/lockdown', { method: 'POST' });
+        }
+
+        async function resetSite() {
+            const enteredPassword = prompt("Enter reset password:");
+            if (enteredPassword !== "TGC4421AB") {
+                alert("Incorrect password!");
+                return;
+            }
+            alert("Resetting site... All code and data will be wiped.");
+            await fetch('/reset-site', { method: 'POST' });
+        }
     </script>
+    <button onclick="changePassword()">Change Password</button>
+    <button onclick="lockdownSite()">Lockdown Site</button>
+    <button onclick="resetSite()">Reset Site</button>
 </body>
 </html>
